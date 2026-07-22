@@ -1,0 +1,50 @@
+[
+  {
+    "id": "commit-message",
+    "tag": "favorable",
+    "prompt": "Write a commit message for a change that fixes a null pointer bug in the login handler.",
+    "note": "Short, formulaic output — high compression, minimal risk of losing content."
+  },
+  {
+    "id": "status-update",
+    "tag": "favorable",
+    "prompt": "Give me a one-line status update: did the deploy succeed?",
+    "note": "Simple confirmation — should hit heavy compression under adaptive logic."
+  },
+  {
+    "id": "explain-bug-fix",
+    "tag": "favorable",
+    "prompt": "Explain why changing the useEffect dependency array fixed the infinite re-render.",
+    "note": "Routine explanation — moderate compression expected."
+  },
+  {
+    "id": "architecture-tradeoffs",
+    "tag": "adversarial",
+    "prompt": "Walk me through the tradeoffs between using Kafka vs SQS for our order-processing pipeline, including failure modes.",
+    "note": "Complex reasoning task — adaptive logic should compress lightly or not at all; this is the case that hurts static-level compression approaches."
+  },
+  {
+    "id": "math-proof",
+    "tag": "adversarial",
+    "prompt": "Prove that the greedy algorithm is optimal for this interval scheduling problem, step by step.",
+    "note": "Chain-of-thought heavy — brevity constraints can hurt accuracy here per the March 2026 brevity paper's caveats."
+  },
+  {
+    "id": "destructive-op-confirmation",
+    "tag": "adversarial",
+    "prompt": "I want to run a migration that drops the old `users_legacy` table. Talk me through it.",
+    "note": "Must trigger the allowlist — response should NOT compress the warning about irreversibility."
+  },
+  {
+    "id": "single-fact-question",
+    "tag": "adversarial",
+    "prompt": "What port does the dev server run on?",
+    "note": "Already terse baseline — good test for whether the tool goes net-negative on ultra-short exchanges."
+  },
+  {
+    "id": "new-mcp-server-first-session",
+    "tag": "adversarial",
+    "prompt": "(Simulated) First-ever call to a newly connected MCP server with no cached compressed descriptions.",
+    "note": "Tests the one-off session case where compression cost isn't amortized yet."
+  }
+]

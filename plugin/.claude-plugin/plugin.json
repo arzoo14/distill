@@ -1,0 +1,43 @@
+{
+  "name": "distill",
+  "version": "0.1.0",
+  "description": "Adaptive, allowlist-protected token compression for Claude Code — semantic compression that never drops safety-relevant content.",
+  "author": {
+    "name": "Arzoo Prajapati",
+    "url": "https://github.com/arzoo14"
+  },
+  "skills": [
+    "./skills/distill"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.js" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop.js" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "distill-toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Distill — cross-platform, allowlist-protected token compression toolkit for AI coding agents.",
+  "scripts": {
+    "test": "node middleware/test/run-tests.js && node plugin/test/run-tests.js",
+    "benchmark": "node benchmarks/run-benchmark.js"
+  },
+  "license": "MIT"
+}

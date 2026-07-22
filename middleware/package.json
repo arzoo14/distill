@@ -1,0 +1,22 @@
+{
+  "name": "distill-shrink",
+  "version": "0.1.0",
+  "description": "MCP middleware that compresses tool/resource descriptions before they hit context, with net-savings telemetry shared with the Distill skill.",
+  "main": "index.js",
+  "bin": {
+    "distill-shrink": "./index.js"
+  },
+  "scripts": {
+    "test": "node test/run-tests.js"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "token-optimization",
+    "claude"
+  ]
+}
