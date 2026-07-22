@@ -1,6 +1,6 @@
 {
   "name": "distill-shrink",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP middleware that compresses tool/resource descriptions before they hit context, with net-savings telemetry shared with the Distill skill.",
   "main": "index.js",
   "bin": {

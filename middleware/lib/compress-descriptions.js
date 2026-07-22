@@ -4,7 +4,9 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { scanForTriggers } = require('./allowlist');
+const { execFileSync } = require('child_process');
+const { scanForTriggers, TRIGGER_PATTERNS } = require('./allowlist');
+const { logEvent } = require('./telemetry');
 
 const DEFAULT_CACHE_PATH = path.join(os.homedir(), '.distill', 'description-cache.json');
 const CACHE_MAX_ENTRIES = 500;
@@ -65,6 +67,60 @@ class DescriptionCache {
 
 const globalCache = new DescriptionCache();
 
+/**
+ * Optional LLM-powered rewrite (DISTILL_SHRINK_LLM=cli): regex substitution
+ * measures only a few percent on real payloads; a one-time model rewrite gets
+ * far more and the persistent cache means each description is paid for once
+ * per server version, ever. Opt-in because it shells out to the `claude` CLI
+ * (subscription) and adds seconds of latency to the FIRST listing of a new
+ * server. The rewrite cost itself is logged honestly as inputTokensAdded.
+ *
+ * Safety verification: every allowlist trigger substring present in the
+ * original must survive the rewrite verbatim, or the rewrite is discarded
+ * and the regex path is used instead.
+ */
+const LLM_MODE = process.env.DISTILL_SHRINK_LLM;
+const LLM_MIN_CHARS = 300;
+
+function defaultLlmRunner(description) {
+  const prompt =
+    'Rewrite this MCP tool description as concisely as possible. Preserve every ' +
+    'requirement, constraint, parameter reference, warning, and caveat — cut only ' +
+    'redundancy and filler. Output ONLY the rewritten description, nothing else.\n\n' +
+    description;
+  return execFileSync('claude', ['-p', prompt, '--model', 'haiku'], {
+    encoding: 'utf8',
+    timeout: 60000,
+    maxBuffer: 4 * 1024 * 1024,
+  });
+}
+
+function llmRewriteDescription(description, runner = defaultLlmRunner) {
+  let out;
+  try {
+    out = String(runner(description)).trim();
+  } catch {
+    return null;
+  }
+  if (!out || out.length >= description.length) return null;
+  // Every safety-relevant trigger in the original must survive verbatim.
+  for (const re of TRIGGER_PATTERNS) {
+    const m = description.match(re);
+    if (m && !out.toLowerCase().includes(m[0].toLowerCase())) return null;
+  }
+  try {
+    logEvent({
+      source: 'middleware_llm_rewrite',
+      // The rewrite call's own cost, charged as input overhead (chars/4).
+      inputTokensAdded: Math.round((description.length + out.length) / 4),
+      estimated: true,
+    });
+  } catch {
+    // Telemetry is best-effort.
+  }
+  return out;
+}
+
 // Substitutions, not blind deletions: removing a connective like "in order to"
 // or "as well as" outright breaks the sentence ("in order to locate the file"
 // must become "to locate the file", not "locate the file"; "X as well as Y"
@@ -93,11 +149,20 @@ const BOILERPLATE_SUBSTITUTIONS = [
  * @param {DescriptionCache} [cache]
  * @returns {string} compressed description
  */
-function compressDescription(description, cache = globalCache) {
+function compressDescription(description, cache = globalCache, llmRunner) {
   if (!description || typeof description !== 'string') return description;
 
   const cached = cache.get(description);
   if (cached !== undefined) return cached;
+
+  if ((LLM_MODE === 'cli' || llmRunner) && description.length >= LLM_MIN_CHARS) {
+    const rewritten = llmRewriteDescription(description, llmRunner || defaultLlmRunner);
+    if (rewritten !== null) {
+      cache.set(description, rewritten);
+      return rewritten;
+    }
+    // Rewrite unavailable or failed verification — fall through to regex path.
+  }
 
   const sentences = description
     .split(/(?<=[.!?])\s+/)
@@ -122,9 +187,18 @@ function compressDescription(description, cache = globalCache) {
   return result;
 }
 
+// Only dedup repeats long enough that the reference text is a clear win.
+const DEDUP_MIN_CHARS = 120;
+
 /**
  * Walk an MCP `tools/list` (or `resources/list`) result payload and compress
  * every `description` field found on top-level entries.
+ *
+ * Cross-tool dedup: MCP servers frequently ship the exact same long
+ * description on many tools/params. The 2nd+ occurrence of an identical
+ * description over DEDUP_MIN_CHARS is replaced with an explicit reference to
+ * the first ("Same as `name`.") — the full text is still present once in the
+ * same listing, so no information leaves the context.
  *
  * Note: mutates `listResult` in place and returns the same object.
  *
@@ -134,12 +208,22 @@ function compressDescription(description, cache = globalCache) {
 function compressListResult(listResult) {
   let originalChars = 0;
   let compressedChars = 0;
+  const firstSeen = new Map(); // compressed text -> label of first location
+
+  const dedup = (compressed, label) => {
+    if (compressed.length < DEDUP_MIN_CHARS) return compressed;
+    const existing = firstSeen.get(compressed);
+    if (existing) return `Same as \`${existing}\`.`;
+    firstSeen.set(compressed, label);
+    return compressed;
+  };
 
   const items = listResult?.tools || listResult?.resources || [];
   for (const item of items) {
+    const itemName = typeof item.name === 'string' ? item.name : 'unnamed';
     if (typeof item.description === 'string') {
       originalChars += item.description.length;
-      item.description = compressDescription(item.description);
+      item.description = dedup(compressDescription(item.description), itemName);
       compressedChars += item.description.length;
     }
     // Compress nested input schema descriptions too, if present.
@@ -149,7 +233,7 @@ function compressListResult(listResult) {
         const prop = props[key];
         if (prop && typeof prop.description === 'string') {
           originalChars += prop.description.length;
-          prop.description = compressDescription(prop.description);
+          prop.description = dedup(compressDescription(prop.description), `${itemName}.${key}`);
           compressedChars += prop.description.length;
         }
       }
@@ -159,4 +243,9 @@ function compressListResult(listResult) {
   return { result: listResult, stats: { originalChars, compressedChars } };
 }
 
-module.exports = { compressDescription, compressListResult, DescriptionCache };
+module.exports = {
+  compressDescription,
+  compressListResult,
+  DescriptionCache,
+  llmRewriteDescription,
+};

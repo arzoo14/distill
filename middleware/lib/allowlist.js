@@ -21,6 +21,17 @@ const TRIGGER_PATTERNS = [
   /\birreversible\b/i,
   /\bcannot\s+be\s+undone\b/i,
   /\bpermanently\s+(remove|delete)\b/i,
+  /\bwipe(s|d)?\s+(everything|all|data|the\s+(disk|drive|database))\b/i,
+  /\berase(s|d)?\s+(all|everything|data)\b/i,
+  /\bdata\s+loss\b/i,
+  /\bnon[- ]?recoverable\b/i,
+  /\bunrecoverable\b/i,
+  /\bfactory\s+reset\b/i,
+  /\breset\s+--hard\b/i,
+  /\bgit\s+clean\b/i,
+  /\bpurge(s|d)?\s+(all|everything|the\s+(database|table|queue))\b/i,
+  /\bwithout\s+(a\s+)?backup\b/i,
+  /\bno\s+rollback\b/i,
 
   // Security language
   /\bvulnerabilit(y|ies)\b/i,

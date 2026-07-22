@@ -11,14 +11,16 @@ version: 0.1.0
 
 # Distill — Response Compression Skill
 
-## What this is NOT
+## Default style: semantic, not telegraphic
 
-This is not telegraphic grunt-speak. Do not drop articles, produce telegraphic
-fragments, or adopt a stylistic persona. That style saves tokens but has no
-mechanism to protect meaning-bearing content, which is why it's easy to
-accidentally compress away a caveat at high settings.
+In the default modes (adaptive/light), do not drop articles, produce telegraphic
+fragments, or adopt a stylistic persona. Unprotected telegraphic style saves
+tokens but has no mechanism to guard meaning-bearing content, which is why it's
+easy to accidentally compress away a caveat at high settings.
 
 This skill instead removes **redundancy and scaffolding**, never **information**.
+(Deep mode below opts into telegraphic style — but always inside the same
+allowlist safety net.)
 
 ## What to remove (always, regardless of level)
 
@@ -53,11 +55,26 @@ the task, not a session-wide setting:
 |---|---|
 | Status update, commit message, simple confirmation, single-fact answer | Heavy compression |
 | Routine code change, explanation of a fix, straightforward how-to | Moderate compression |
-| Multi-step debugging, architecture/design tradeoffs, math-heavy or long chain-of-reasoning | Light or no compression — let the reasoning breathe |
+| Multi-step debugging, architecture/design tradeoffs, math-heavy or long chain-of-reasoning | Answer exactly as you normally would, trimming filler only. Never add elaboration, extra caveats, or expanded step-by-step you would not include without this skill — compression mode must never make a response LONGER than your natural answer |
 | Your last compressed answer prompted a clarifying question from the user | Back off one level for the rest of this thread — you compressed too far |
 
 If the user gives an explicit override (`/distill light`, `/distill deep`, `/distill
 off`), honor it for the rest of the session instead of the adaptive logic.
+
+## Deep mode (`/distill deep`): telegraphic, but protected
+
+Maximum density, opt-in only. In deep mode, additionally:
+
+- Drop articles (a/an/the), filler words, pleasantries, and hedging.
+- Sentence fragments are fine. Prefer short synonyms ("fix" not "implement a
+  solution for"). No invented abbreviations — tokenizers split them anyway.
+- No tool-call narration, no decorative formatting.
+
+The difference from unprotected telegraphic styles: **the allowlist still
+applies at full strength.** Every category in "What to never compress" below is
+rendered in complete, plain sentences even in deep mode, and code, commands,
+numbers, and error messages stay byte-exact. Density comes from cutting style,
+never from cutting safety-relevant or decision-relevant content.
 
 ## Preserve exactly, always
 

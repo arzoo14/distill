@@ -26,7 +26,10 @@
 const { spawn } = require('child_process');
 const readline = require('readline');
 const { compressListResult } = require('./lib/compress-descriptions');
+const { compressCallResult } = require('./lib/compress-results');
 const { logEvent } = require('./lib/telemetry');
+
+const RESULTS_ENABLED = process.env.DISTILL_SHRINK_RESULTS !== 'off';
 
 function parseArgs(argv) {
   const sepIndex = argv.indexOf('--');
@@ -43,17 +46,24 @@ function parseArgs(argv) {
  * the agent. Extracted from main() so the passthrough-on-failure behavior is
  * unit-testable without spawning a child process.
  *
+ * `pendingCalls` maps request id -> kind ('list' for tools/resources
+ * listings, 'call' for tool invocations).
+ *
  * On any compression error the ORIGINAL line string is returned — not a
- * re-serialization of the parsed message, because compressListResult mutates
- * descriptions in place and the parsed object may be half-modified by the
- * time an exception surfaces.
+ * re-serialization of the parsed message, because both compressors mutate
+ * payloads in place and the parsed object may be half-modified by the time
+ * an exception surfaces.
  *
  * @param {string} line
- * @param {Map} pendingListCalls
- * @param {{ compressFn?: typeof compressListResult, logFn?: typeof logEvent }} [deps]
+ * @param {Map<string|number, 'list'|'call'>} pendingCalls
+ * @param {{ compressFn?: typeof compressListResult, compressResultFn?: typeof compressCallResult, logFn?: typeof logEvent }} [deps]
  * @returns {string} the line to write to stdout
  */
-function handleServerLine(line, pendingListCalls, { compressFn = compressListResult, logFn = logEvent } = {}) {
+function handleServerLine(
+  line,
+  pendingCalls,
+  { compressFn = compressListResult, compressResultFn = compressCallResult, logFn = logEvent } = {}
+) {
   if (!line.trim()) return line;
 
   let msg;
@@ -64,24 +74,25 @@ function handleServerLine(line, pendingListCalls, { compressFn = compressListRes
     return line;
   }
 
-  if (msg === null || typeof msg !== 'object' || msg.id === undefined || !pendingListCalls.has(msg.id)) {
+  if (msg === null || typeof msg !== 'object' || msg.id === undefined || !pendingCalls.has(msg.id)) {
     return line;
   }
 
-  // This response answers a tools/list or resources/list request — stop
-  // tracking it whether or not it carries a result (error responses have no
-  // result and must not leak map entries).
-  pendingListCalls.delete(msg.id);
+  // This response answers a tracked request — stop tracking it whether or
+  // not it carries a result (error responses have no result and must not
+  // leak map entries).
+  const kind = pendingCalls.get(msg.id);
+  pendingCalls.delete(msg.id);
   if (!msg.result) return line;
 
   try {
-    const { result, stats } = compressFn(msg.result);
-    msg.result = result;
+    const { stats } =
+      kind === 'call' ? compressResultFn(msg.result) : compressFn(msg.result);
 
-    if (stats.originalChars > 0) {
+    if (stats.originalChars > 0 && stats.originalChars !== stats.compressedChars) {
       try {
         logFn({
-          source: 'middleware_tool_list',
+          source: kind === 'call' ? 'middleware_tool_result' : 'middleware_tool_list',
           // Rough chars->tokens estimate (÷4) kept explicit and separate from
           // the API-measured numbers used elsewhere — see HONEST-NUMBERS.md.
           outputTokensBaseline: Math.round(stats.originalChars / 4),
@@ -107,18 +118,20 @@ function main() {
     stdio: ['pipe', 'pipe', 'inherit'],
   });
 
-  // Track in-flight requests so we know which responses were `tools/list` /
-  // `resources/list` calls (JSON-RPC responses don't repeat the method name).
-  const pendingListCalls = new Map();
+  // Track in-flight requests so we know which responses were listings or
+  // tool invocations (JSON-RPC responses don't repeat the method name).
+  const pendingCalls = new Map();
 
-  // --- agent -> wrapped server: pass through untouched, but remember list calls ---
+  // --- agent -> wrapped server: pass through untouched, but remember calls ---
   const agentToServer = readline.createInterface({ input: process.stdin });
   agentToServer.on('line', (line) => {
     if (line.trim()) {
       try {
         const msg = JSON.parse(line);
         if (msg.method === 'tools/list' || msg.method === 'resources/list') {
-          pendingListCalls.set(msg.id, true);
+          pendingCalls.set(msg.id, 'list');
+        } else if (msg.method === 'tools/call' && RESULTS_ENABLED) {
+          pendingCalls.set(msg.id, 'call');
         }
       } catch {
         // Not JSON, or malformed — pass through as-is without inspection.
@@ -129,10 +142,10 @@ function main() {
     }
   });
 
-  // --- wrapped server -> agent: intercept list responses, compress, forward ---
+  // --- wrapped server -> agent: intercept tracked responses, compress, forward ---
   const serverToAgent = readline.createInterface({ input: child.stdout });
   serverToAgent.on('line', (line) => {
-    process.stdout.write(handleServerLine(line, pendingListCalls) + '\n');
+    process.stdout.write(handleServerLine(line, pendingCalls) + '\n');
   });
 
   child.on('error', (err) => {

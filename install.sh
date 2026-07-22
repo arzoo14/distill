@@ -53,8 +53,8 @@ if command -v claude >/dev/null 2>&1; then
     "claude plugin marketplace add ${REPO} && claude plugin install distill@distill"
 fi
 
-# Codex CLI
-if command -v codex >/dev/null 2>&1 || command -v npx >/dev/null 2>&1; then
+# Codex CLI (only when actually installed — npx alone doesn't mean Codex is used)
+if command -v codex >/dev/null 2>&1; then
   run "codex" "Codex CLI skill" \
     "npx skills add ${REPO} -a codex"
 fi
@@ -76,8 +76,8 @@ if command -v npx >/dev/null 2>&1; then
 fi
 
 # Copilot (soft probe — no reliable always-on detection signal)
-run "copilot" "GitHub Copilot (manual: copy SKILL.md into your Copilot instructions)" \
-  "echo 'See README.md — Copilot has no CLI install path; copy SKILL.md manually.'"
+run "copilot" "GitHub Copilot (manual: copy plugin/skills/distill/SKILL.md into your Copilot instructions)" \
+  "echo 'See README.md — Copilot has no CLI install path; copy plugin/skills/distill/SKILL.md manually.'"
 
 # MCP middleware, opt-in
 if [[ "$WITH_MCP_SHRINK" == "true" ]]; then

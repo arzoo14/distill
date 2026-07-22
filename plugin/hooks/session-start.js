@@ -23,11 +23,29 @@ function main() {
       fs.mkdirSync(STATE_DIR, { recursive: true });
     }
 
+    // User preferences persist across sessions; only per-session counters
+    // reset. A user who chose `/distill deep` or `autocompact on` yesterday
+    // keeps that choice today.
+    let prefs = {};
+    try {
+      const prev = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+      prefs = {
+        mode: prev.mode,
+        autoCompactMemoryFiles: prev.autoCompactMemoryFiles,
+        memoryFileGlobs: prev.memoryFileGlobs,
+      };
+    } catch {
+      // First run or corrupt state — defaults below apply.
+    }
+
     const initialState = {
       mode: 'adaptive', // adaptive | light | deep | off — overridden by /distill
-      consecutiveClarifications: 0, // used to auto-back-off if we compressed too far
       autoCompactMemoryFiles: false, // opt-in via `/distill autocompact on`
       memoryFileGlobs: ['CLAUDE.md'], // basenames watched by the PostToolUse hook
+      ...Object.fromEntries(Object.entries(prefs).filter(([, v]) => v !== undefined)),
+      // Per-session counters — always reset:
+      consecutiveClarifications: 0, // auto-back-off if we compressed too far
+      consecutiveSimple: 0, // quick-fire streak detection
       skillOverheadChargedThisSession: false, // skill footprint logged once per session
       allowlistEscalationAttempts: 0, // Stop-hook escalation loop guard
       sessionStartedAt: new Date().toISOString(),

@@ -1,0 +1,19 @@
+{
+  "name": "distill",
+  "description": "Distill — honest token-efficiency toolkit: adaptive semantic compression with an enforced safety allowlist, plus MCP middleware that compresses tool descriptions before they reach context.",
+  "owner": {
+    "name": "Arzoo Prajapati",
+    "url": "https://github.com/arzoo14"
+  },
+  "plugins": [
+    {
+      "name": "distill",
+      "source": "./plugin",
+      "description": "Adaptive, allowlist-protected token compression for Claude Code — semantic compression that never drops safety-relevant content.",
+      "author": {
+        "name": "Arzoo Prajapati",
+        "url": "https://github.com/arzoo14"
+      }
+    }
+  ]
+}

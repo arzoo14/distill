@@ -1,6 +1,6 @@
 {
   "name": "distill",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adaptive, allowlist-protected token compression for Claude Code — semantic compression that never drops safety-relevant content.",
   "author": {
     "name": "Arzoo Prajapati",
@@ -13,21 +13,30 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js" }
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js"
+          }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.js" }
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.js"
+          }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop.js" }
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop.js"
+          }
         ]
       }
     ],
@@ -35,7 +44,10 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js" }
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js"
+          }
         ]
       }
     ]

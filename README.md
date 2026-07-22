@@ -13,11 +13,13 @@ of those directly — see `docs/HONEST-NUMBERS.md` and `docs/ALLOWLIST.md`.
 
 ## Two things, one install
 
-1. **The Skill** (`SKILL.md`) — changes how the agent *writes*. Semantic compression,
+1. **The Skill** (`plugin/skills/distill/SKILL.md`) — changes how the agent *writes*. Semantic compression,
    not telegraphic grunt-speak. Adaptive per-turn intensity instead of a fixed dial.
 2. **The Middleware** (`middleware/`, npm package `distill-shrink`) — changes what gets
    *loaded into context* in the first place: compresses verbose MCP tool/resource
-   descriptions before they ever reach the model.
+   descriptions AND tool results (ANSI/whitespace/repeat/JSON cleanup — up to ~87% on
+   repetitive logs) before they ever reach the model. This is where the measurable,
+   model-independent savings live.
 
 Both write to one shared telemetry log so "savings" is always a single, honest,
 whole-session number — not two separate marketing claims.

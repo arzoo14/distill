@@ -5,7 +5,19 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { scanForTriggers } = require('../lib/allowlist');
-const { compressDescription, compressListResult, DescriptionCache } = require('../lib/compress-descriptions');
+const {
+  compressDescription,
+  compressListResult,
+  DescriptionCache,
+  llmRewriteDescription,
+} = require('../lib/compress-descriptions');
+const {
+  compressResultText,
+  compressCallResult,
+  stripAnsi,
+  collapseRepeats,
+  minifyJson,
+} = require('../lib/compress-results');
 const { handleServerLine } = require('../index');
 const { loadRatios, ratioForBucket, DEFAULT_RATIOS } = require('../lib/baseline-ratios');
 const { logEvent, summarize } = require('../lib/telemetry');
@@ -42,6 +54,36 @@ test('allowlist catches caveat language', () => {
 test('allowlist does not false-positive on plain description', () => {
   const { matched } = scanForTriggers('Fetches the current weather for a given city.');
   assert.strictEqual(matched, false);
+});
+
+test('allowlist catches destructive paraphrases', () => {
+  const positives = [
+    'This wipes everything on the target volume.',
+    'Running this erases all data from the device.',
+    'Warning: possible data loss if the sync is interrupted.',
+    'The deletion is unrecoverable.',
+    'Do a factory reset of the appliance.',
+    'git reset --hard origin/main discards local commits.',
+    'git clean removes untracked files.',
+    'This purges the database completely.',
+    'Proceeding without a backup is risky.',
+    'There is no rollback for this migration.',
+  ];
+  for (const text of positives) {
+    assert.strictEqual(scanForTriggers(text).matched, true, `should match: ${text}`);
+  }
+});
+
+test('allowlist avoids paraphrase false positives', () => {
+  const negatives = [
+    'Wipe the screen with a soft cloth.',
+    'The eraser tool removes strokes from the canvas.',
+    'Reset the form fields to defaults.',
+    'Purge stale entries from the in-memory cache periodically.',
+  ];
+  for (const text of negatives) {
+    assert.strictEqual(scanForTriggers(text).matched, false, `should NOT match: ${text}`);
+  }
 });
 
 test('allowlist handles non-string input without throwing', () => {
@@ -220,6 +262,139 @@ test('handleServerLine tolerates JSON scalars and arrays (batches) as lines', ()
   assert.strictEqual(handleServerLine('null', new Map()), 'null');
   const batch = JSON.stringify([{ id: 1 }, { id: 2 }]);
   assert.strictEqual(handleServerLine(batch, new Map([[1, true]])), batch);
+});
+
+// --- tool-result compression (P1) ---
+
+test('stripAnsi removes escape codes but keeps bracketed text', () => {
+  assert.strictEqual(stripAnsi('\x1b[31mred\x1b[0m [info] ok'), 'red [info] ok');
+});
+
+test('compressResultText collapses blank runs and trailing whitespace', () => {
+  assert.strictEqual(compressResultText('a   \n\n\n\n\nb'), 'a\n\nb');
+});
+
+test('collapseRepeats marks repeated lines explicitly', () => {
+  const out = collapseRepeats('x\nx\nx\nx\nx\ny');
+  assert.ok(out.includes('repeated 4 more times'), out);
+  assert.strictEqual(out.split('\n').length, 3);
+});
+
+test('collapseRepeats leaves short repeats alone', () => {
+  assert.strictEqual(collapseRepeats('x\nx\ny'), 'x\nx\ny');
+});
+
+test('minifyJson compacts pretty JSON but not invalid or non-JSON', () => {
+  const pretty = JSON.stringify({ a: 1, list: [1, 2, 3] }, null, 4);
+  assert.strictEqual(minifyJson(pretty), JSON.stringify({ a: 1, list: [1, 2, 3] }));
+  assert.strictEqual(minifyJson('not json {'), 'not json {');
+});
+
+test('compressResultText never touches allowlist-protected content', () => {
+  const dangerous = 'Step 1: run rm -rf ./build\n\n\n\nStep 2: rebuild';
+  assert.strictEqual(compressResultText(dangerous), dangerous);
+});
+
+test('compressCallResult compresses text blocks and reports stats', () => {
+  const payload = {
+    content: [
+      { type: 'text', text: '\x1b[32mPASS\x1b[0m suite one\n\n\n\n\n\nok' },
+      { type: 'image', data: 'xyz' },
+    ],
+  };
+  const { stats } = compressCallResult(payload);
+  assert.ok(stats.compressedChars < stats.originalChars);
+  assert.ok(!payload.content[0].text.includes('\x1b'));
+});
+
+test('handleServerLine routes call-kind responses through result compression', () => {
+  const pending = new Map([[9, 'call']]);
+  const line = JSON.stringify({
+    id: 9,
+    result: { content: [{ type: 'text', text: 'line\n\n\n\n\nend' }] },
+  });
+  const out = handleServerLine(line, pending, { logFn: () => {} });
+  const parsed = JSON.parse(out);
+  assert.strictEqual(parsed.result.content[0].text, 'line\n\nend');
+  assert.strictEqual(pending.size, 0);
+});
+
+// --- cross-tool dedup (P1) ---
+
+test('compressListResult dedups identical long descriptions with a reference', () => {
+  const long = 'Provide the absolute filesystem path to the target file. '.repeat(4);
+  const listResult = {
+    tools: [
+      { name: 'read_file', description: long },
+      { name: 'write_file', description: long },
+      { name: 'stat_file', description: long },
+    ],
+  };
+  const { result } = compressListResult(listResult);
+  assert.notStrictEqual(result.tools[0].description, 'Same as `read_file`.');
+  assert.strictEqual(result.tools[1].description, 'Same as `read_file`.');
+  assert.strictEqual(result.tools[2].description, 'Same as `read_file`.');
+});
+
+test('compressListResult does not dedup short descriptions', () => {
+  const short = 'A path.';
+  const { result } = compressListResult({
+    tools: [
+      { name: 'a', description: short },
+      { name: 'b', description: short },
+    ],
+  });
+  assert.strictEqual(result.tools[1].description, short);
+});
+
+// --- LLM rewrite verification (P1) ---
+
+test('llmRewriteDescription accepts a shorter rewrite that keeps triggers', () => {
+  const original =
+    'This tool deletes records in bulk from the datastore backend service. ' +
+    'Warning: this operation is irreversible once committed to the store. ' +
+    'It also supports filtering by date range and by record type prefixes.';
+  const out = llmRewriteDescription(original, () => 'Bulk-deletes records; irreversible. Supports date/type filters.');
+  assert.ok(out && out.length < original.length);
+});
+
+test('llmRewriteDescription rejects a rewrite that drops a trigger', () => {
+  const original =
+    'This tool deletes records in bulk from the datastore backend service. ' +
+    'Warning: this operation is irreversible once committed to the store. ' +
+    'It also supports filtering by date range and by record type prefixes.';
+  assert.strictEqual(
+    llmRewriteDescription(original, () => 'Bulk-deletes records. Supports date/type filters.'),
+    null
+  );
+});
+
+test('llmRewriteDescription rejects longer or empty rewrites and runner errors', () => {
+  const original = 'Short description of a tool that fetches weather.';
+  assert.strictEqual(llmRewriteDescription(original, () => original + ' padded longer'), null);
+  assert.strictEqual(llmRewriteDescription(original, () => ''), null);
+  assert.strictEqual(
+    llmRewriteDescription(original, () => {
+      throw new Error('cli missing');
+    }),
+    null
+  );
+});
+
+test('compressDescription uses injected LLM runner and caches the rewrite', () => {
+  const cache = new DescriptionCache(tmpFile('cache.json'));
+  const original =
+    'This tool can be used to fetch weather data from the remote provider API. '.repeat(6);
+  let calls = 0;
+  const runner = () => {
+    calls += 1;
+    return 'Fetches weather data from the remote provider API.';
+  };
+  const first = compressDescription(original, cache, runner);
+  const second = compressDescription(original, cache, runner);
+  assert.strictEqual(first, 'Fetches weather data from the remote provider API.');
+  assert.strictEqual(second, first);
+  assert.strictEqual(calls, 1, 'rewrite paid exactly once');
 });
 
 // --- baseline-ratios (Gap 2) ---

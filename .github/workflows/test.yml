@@ -1,0 +1,27 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Syntax-check all sources
+        run: |
+          set -e
+          for f in $(find . -name "*.js" -not -path "./.git/*" -not -path "./node_modules/*"); do
+            node --check "$f"
+          done
+          bash -n install.sh
+      - name: Run test suites
+        run: npm test

@@ -57,6 +57,14 @@ const CLARIFICATION_SIGNALS = [
 function classify(promptText) {
   if (SIMPLE_SIGNALS.some((re) => re.test(promptText))) return 'simple';
   if (COMPLEX_SIGNALS.some((re) => re.test(promptText))) return 'complex';
+  // Free structural signals, no LLM needed:
+  // - a pasted code fence or a long prompt usually means real work
+  // - a long paste containing error/traceback language is a debugging turn
+  if (/```/.test(promptText)) return 'complex';
+  if (promptText.length > 600) return 'complex';
+  if (promptText.length > 200 && /\b(error|exception|traceback|stack trace)\b/i.test(promptText)) {
+    return 'complex';
+  }
   return 'moderate';
 }
 
@@ -68,6 +76,15 @@ function isClarification(promptText) {
 function stepDown(hint) {
   if (hint === 'simple') return 'moderate';
   return 'complex';
+}
+
+// Inverse of the clarification back-off: several simple turns in a row with
+// no confusion is evidence the session is in quick-fire mode — nudge a
+// moderate turn down to simple. Never touches complex turns.
+const SIMPLE_STREAK_THRESHOLD = 3;
+function applySimpleStreak(hint, streak) {
+  if (hint === 'moderate' && streak >= SIMPLE_STREAK_THRESHOLD) return 'simple';
+  return hint;
 }
 
 function readState() {
@@ -117,6 +134,10 @@ function main() {
   state.consecutiveClarifications = clarification
     ? (state.consecutiveClarifications || 0) + 1
     : 0;
+
+  let hint = classify(promptText);
+  const priorSimpleStreak = state.consecutiveSimple || 0;
+  state.consecutiveSimple = hint === 'simple' ? priorSimpleStreak + 1 : 0;
   writeState(state);
 
   // Explicitly disabled — stay silent, no hint noise.
@@ -124,11 +145,18 @@ function main() {
     return;
   }
 
-  let hint = classify(promptText);
   if (state.consecutiveClarifications > 0) {
     hint = stepDown(hint);
     process.stdout.write(
       `distill_turn_hint: ${hint} (back off: ${state.consecutiveClarifications} consecutive clarification${state.consecutiveClarifications === 1 ? '' : 's'})\n`
+    );
+    return;
+  }
+
+  const streaked = applySimpleStreak(hint, priorSimpleStreak);
+  if (streaked !== hint) {
+    process.stdout.write(
+      `distill_turn_hint: ${streaked} (streak: ${priorSimpleStreak} simple turns)\n`
     );
     return;
   }
@@ -138,7 +166,7 @@ function main() {
   process.stdout.write(`distill_turn_hint: ${hint}\n`);
 }
 
-module.exports = { classify, isClarification, stepDown };
+module.exports = { classify, isClarification, stepDown, applySimpleStreak };
 
 if (require.main === module) {
   main();

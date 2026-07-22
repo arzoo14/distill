@@ -28,10 +28,34 @@ the headline.
   adaptive logic) — but until that logic is well-tuned, expect near-zero or slightly
   negative savings on these.
 
+## Latest run (2026-07-23, claude-sonnet-5, CLI mode, single sample per case)
+
+What the numbers actually showed — including where they're bad:
+
+- **Formulaic turns compress well**: 20–57% output reduction on commit-message,
+  status-update, and explain-a-fix cases, consistent across runs.
+- **Complex-reasoning turns got LONGER**: architecture-tradeoffs and math-proof
+  outputs grew 12–52% with the skill active. The "compress lightly on complex
+  turns" instruction currently over-corrects into expansion. This is a known,
+  published defect of v0.1, not a rounding artifact — it reproduced in both runs.
+- **Destructive-op confirmations got longer too** (+57%): the allowlist renders
+  warnings in full. That is by design — safety content is paid for, not trimmed.
+- **Every single-turn benchmark case is net-negative**, because the ~973-token
+  skill overhead is charged against one turn. In a real session the overhead is
+  paid once and amortizes across every turn; a 20-turn session with these
+  per-turn output savings would be net-positive on favorable workloads. The
+  benchmark deliberately does not hide the single-turn worst case.
+- **Single-sample variance is large** (same case varied by ±25pp reduction
+  between runs). Treat per-case numbers as indicative, not precise.
+
 ## Methodology
 
-- All numbers come from real token counts via the Anthropic API (`usage.output_tokens`,
-  `usage.input_tokens`), not estimates.
+- Output numbers come from real token counts (`usage.output_tokens`), not estimates.
+- Two measurement modes: direct API (`ANTHROPIC_API_KEY` set — input deltas also
+  measured) or Claude Code CLI on a subscription (no key needed — input overhead
+  is a deterministic chars/4 estimate of the skill text, because prompt-cache
+  behavior makes between-arm input deltas pure noise). The results file records
+  which mode produced it.
 - Baseline = same prompt run with the skill/middleware disabled.
 - Every benchmark run reports: output reduction %, input tokens added, and net delta —
   all three, always, not just the first.

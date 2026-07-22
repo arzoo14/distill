@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const { classify, isClarification, stepDown } = require('../hooks/user-prompt-submit');
+const { classify, isClarification, stepDown, applySimpleStreak } = require('../hooks/user-prompt-submit');
 const { extractTurnContext, findProtectedMisses } = require('../hooks/stop');
 const { shouldNudge } = require('../hooks/post-tool-use');
 
@@ -26,6 +26,23 @@ test('classify buckets simple/complex/moderate prompts', () => {
   assert.strictEqual(classify('debug why the cache misses'), 'complex');
   assert.strictEqual(classify('walk me through the architecture tradeoffs'), 'complex');
   assert.strictEqual(classify('rename this variable everywhere'), 'moderate');
+});
+
+test('classify treats code fences and long pastes as complex', () => {
+  assert.strictEqual(classify('why does this fail?\n```js\nconst x = 1;\n```'), 'complex');
+  assert.strictEqual(classify('x'.repeat(700)), 'complex');
+  assert.strictEqual(
+    classify('here is the error: TypeError blah '.padEnd(250, 'x') + ' stack trace follows'),
+    'complex'
+  );
+  assert.strictEqual(classify('short error mention'), 'moderate');
+});
+
+test('applySimpleStreak nudges moderate to simple after a streak, never complex', () => {
+  assert.strictEqual(applySimpleStreak('moderate', 3), 'simple');
+  assert.strictEqual(applySimpleStreak('moderate', 2), 'moderate');
+  assert.strictEqual(applySimpleStreak('complex', 5), 'complex');
+  assert.strictEqual(applySimpleStreak('simple', 5), 'simple');
 });
 
 // --- clarification back-off (Gap 3) ---
