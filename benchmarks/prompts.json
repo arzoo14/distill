@@ -42,9 +42,9 @@
     "note": "Already terse baseline — good test for whether the tool goes net-negative on ultra-short exchanges."
   },
   {
-    "id": "new-mcp-server-first-session",
+    "id": "trivial-confirmation",
     "tag": "adversarial",
-    "prompt": "(Simulated) First-ever call to a newly connected MCP server with no cached compressed descriptions.",
-    "note": "Tests the one-off session case where compression cost isn't amortized yet."
+    "prompt": "Yes, go ahead and rename the variable like you suggested.",
+    "note": "Minimal-turn case: the correct answer is a couple of words. Tests whether a compression skill ADDS framing/overhead to a turn that has nothing to compress — the failure mode where style instructions cost more than they save."
   }
 ]

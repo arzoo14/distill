@@ -28,25 +28,32 @@ the headline.
   adaptive logic) — but until that logic is well-tuned, expect near-zero or slightly
   negative savings on these.
 
-## Latest run (2026-07-23, claude-sonnet-5, CLI mode, single sample per case)
+## Latest run (2026-07-23, claude-sonnet-5, CLI mode, `--repeats 3` medians)
 
-What the numbers actually showed — including where they're bad:
+Four arms: baseline, distill-adaptive, distill-deep, and — for scale — a
+popular telegraphic-style compression skill run on the identical rig.
 
-- **Formulaic turns compress well**: 20–57% output reduction on commit-message,
-  status-update, and explain-a-fix cases, consistent across runs.
-- **Complex-reasoning turns got LONGER**: architecture-tradeoffs and math-proof
-  outputs grew 12–52% with the skill active. The "compress lightly on complex
-  turns" instruction currently over-corrects into expansion. This is a known,
-  published defect of v0.1, not a rounding artifact — it reproduced in both runs.
-- **Destructive-op confirmations got longer too** (+57%): the allowlist renders
-  warnings in full. That is by design — safety content is paid for, not trimmed.
-- **Every single-turn benchmark case is net-negative**, because the ~973-token
-  skill overhead is charged against one turn. In a real session the overhead is
-  paid once and amortizes across every turn; a 20-turn session with these
-  per-turn output savings would be net-positive on favorable workloads. The
-  benchmark deliberately does not hide the single-turn worst case.
-- **Single-sample variance is large** (same case varied by ±25pp reduction
-  between runs). Treat per-case numbers as indicative, not precise.
+- **Totals (median output vs 6009-token baseline)**: distill-adaptive **+0.3%**
+  (neutral), distill-deep **−14.2%** (expanded), telegraphic-style comparison
+  arm **−18.0%** (expanded most). Inside an agent harness whose own system
+  prompt already demands concision, no style-level tool saves meaningful output
+  tokens — the honest headline is that adaptive mode does no harm while
+  blanket-style modes measurably backfire.
+- **The v0.1 complex-turn expansion defect is fixed**: architecture-tradeoffs
+  +3.6%, math-proof +6.3%, destructive-op 0% (previously −29% to −52%). The
+  instruction rewrite ("never longer than your natural answer") did it.
+- **Deep mode's niche is quick-fire turns**: +73% on status updates, +44% on
+  single-fact questions — best in test — but −28% on complex reasoning. That is
+  why it's an explicit opt-in, not a default.
+- **Where the real savings live**: the middleware. Tool-result compression
+  measured up to 87% on repetitive logs with meaning-safe transforms only —
+  model-independent, deterministic, counted from real characters.
+- **Variance is still real** at n=3 (same case ranged 173–394 baseline tokens
+  across repeats). Treat per-case numbers as indicative; totals and signs are
+  stable.
+- One legacy benchmark case used a placeholder "(Simulated)" prompt that
+  produced meaningless −380%+ swings; it has been replaced with a real
+  minimal-turn case (`trivial-confirmation`).
 
 ## Methodology
 

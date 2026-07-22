@@ -2,145 +2,313 @@
   {
     "id": "commit-message",
     "tag": "favorable",
-    "baselineOutputTokens": 109,
-    "distilledOutputTokens": 55,
-    "distilledReductionPct": 49.5,
+    "baselineOutputTokens": 214,
+    "baselineOutputTokensSamples": [
+      394,
+      214,
+      173
+    ],
+    "distilledOutputTokens": 186,
+    "distilledReductionPct": 13.1,
+    "distilledOutputTokensSamples": [
+      51,
+      186,
+      214
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": 49.5,
+    "outputReductionPct": 13.1,
     "inputTokensAdded": 1248,
-    "netDelta": -1194,
-    "deepOutputTokens": 68,
-    "deepReductionPct": 37.6,
+    "netDelta": -1220,
+    "deepOutputTokens": 238,
+    "deepReductionPct": -11.2,
+    "deepOutputTokensSamples": [
+      238,
+      313,
+      17
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 250,
-    "compareReductionPct": -129.4,
+    "compareOutputTokens": 283,
+    "compareReductionPct": -32.2,
+    "compareOutputTokensSamples": [
+      100,
+      283,
+      321
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "status-update",
     "tag": "favorable",
-    "baselineOutputTokens": 20,
-    "distilledOutputTokens": 20,
-    "distilledReductionPct": 0,
+    "baselineOutputTokens": 67,
+    "baselineOutputTokensSamples": [
+      38,
+      83,
+      67
+    ],
+    "distilledOutputTokens": 25,
+    "distilledReductionPct": 62.7,
+    "distilledOutputTokensSamples": [
+      25,
+      53,
+      20
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": 0,
+    "outputReductionPct": 62.7,
     "inputTokensAdded": 1248,
-    "netDelta": -1248,
-    "deepOutputTokens": 19,
-    "deepReductionPct": 5,
+    "netDelta": -1206,
+    "deepOutputTokens": 18,
+    "deepReductionPct": 73.1,
+    "deepOutputTokensSamples": [
+      18,
+      15,
+      25
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 23,
-    "compareReductionPct": -15,
+    "compareOutputTokens": 55,
+    "compareReductionPct": 17.9,
+    "compareOutputTokensSamples": [
+      97,
+      53,
+      55
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "explain-bug-fix",
     "tag": "favorable",
-    "baselineOutputTokens": 621,
-    "distilledOutputTokens": 562,
-    "distilledReductionPct": 9.5,
+    "baselineOutputTokens": 695,
+    "baselineOutputTokensSamples": [
+      695,
+      773,
+      624
+    ],
+    "distilledOutputTokens": 655,
+    "distilledReductionPct": 5.8,
+    "distilledOutputTokensSamples": [
+      655,
+      552,
+      997
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": 9.5,
+    "outputReductionPct": 5.8,
     "inputTokensAdded": 1248,
-    "netDelta": -1189,
-    "deepOutputTokens": 479,
-    "deepReductionPct": 22.9,
+    "netDelta": -1208,
+    "deepOutputTokens": 709,
+    "deepReductionPct": -2,
+    "deepOutputTokensSamples": [
+      709,
+      882,
+      632
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 578,
-    "compareReductionPct": 6.9,
+    "compareOutputTokens": 1162,
+    "compareReductionPct": -67.2,
+    "compareOutputTokensSamples": [
+      1162,
+      1318,
+      519
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "architecture-tradeoffs",
     "tag": "adversarial",
-    "baselineOutputTokens": 1751,
-    "distilledOutputTokens": 2261,
-    "distilledReductionPct": -29.1,
+    "baselineOutputTokens": 1631,
+    "baselineOutputTokensSamples": [
+      2033,
+      1631,
+      1573
+    ],
+    "distilledOutputTokens": 1572,
+    "distilledReductionPct": 3.6,
+    "distilledOutputTokensSamples": [
+      1349,
+      1572,
+      2147
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": -29.1,
+    "outputReductionPct": 3.6,
     "inputTokensAdded": 1248,
-    "netDelta": -1758,
-    "deepOutputTokens": 1984,
-    "deepReductionPct": -13.3,
+    "netDelta": -1189,
+    "deepOutputTokens": 2082,
+    "deepReductionPct": -27.7,
+    "deepOutputTokensSamples": [
+      2082,
+      1953,
+      3706
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 1598,
-    "compareReductionPct": 8.7,
+    "compareOutputTokens": 1647,
+    "compareReductionPct": -1,
+    "compareOutputTokensSamples": [
+      1647,
+      1674,
+      1557
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "math-proof",
     "tag": "adversarial",
-    "baselineOutputTokens": 1439,
-    "distilledOutputTokens": 1439,
-    "distilledReductionPct": 0,
+    "baselineOutputTokens": 1691,
+    "baselineOutputTokensSamples": [
+      1691,
+      1529,
+      1884
+    ],
+    "distilledOutputTokens": 1585,
+    "distilledReductionPct": 6.3,
+    "distilledOutputTokensSamples": [
+      1368,
+      1672,
+      1585
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": 0,
+    "outputReductionPct": 6.3,
     "inputTokensAdded": 1248,
-    "netDelta": -1248,
-    "deepOutputTokens": 1534,
-    "deepReductionPct": -6.6,
+    "netDelta": -1142,
+    "deepOutputTokens": 1817,
+    "deepReductionPct": -7.5,
+    "deepOutputTokensSamples": [
+      1817,
+      1346,
+      2815
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 1435,
-    "compareReductionPct": 0.3,
+    "compareOutputTokens": 1560,
+    "compareReductionPct": 7.7,
+    "compareOutputTokensSamples": [
+      1689,
+      1325,
+      1560
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "destructive-op-confirmation",
     "tag": "adversarial",
-    "baselineOutputTokens": 1160,
-    "distilledOutputTokens": 1204,
-    "distilledReductionPct": -3.8,
+    "baselineOutputTokens": 1226,
+    "baselineOutputTokensSamples": [
+      1212,
+      1226,
+      1330
+    ],
+    "distilledOutputTokens": 1226,
+    "distilledReductionPct": 0,
+    "distilledOutputTokensSamples": [
+      865,
+      1544,
+      1226
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": -3.8,
+    "outputReductionPct": 0,
     "inputTokensAdded": 1248,
-    "netDelta": -1292,
-    "deepOutputTokens": 1365,
-    "deepReductionPct": -17.7,
+    "netDelta": -1248,
+    "deepOutputTokens": 1513,
+    "deepReductionPct": -23.4,
+    "deepOutputTokensSamples": [
+      1244,
+      1590,
+      1513
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 1017,
-    "compareReductionPct": 12.3,
+    "compareOutputTokens": 1793,
+    "compareReductionPct": -46.2,
+    "compareOutputTokensSamples": [
+      1976,
+      955,
+      1793
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "single-fact-question",
     "tag": "adversarial",
-    "baselineOutputTokens": 405,
-    "distilledOutputTokens": 714,
-    "distilledReductionPct": -76.3,
+    "baselineOutputTokens": 455,
+    "baselineOutputTokensSamples": [
+      697,
+      357,
+      455
+    ],
+    "distilledOutputTokens": 595,
+    "distilledReductionPct": -30.8,
+    "distilledOutputTokensSamples": [
+      265,
+      595,
+      790
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": -76.3,
+    "outputReductionPct": -30.8,
     "inputTokensAdded": 1248,
-    "netDelta": -1557,
-    "deepOutputTokens": 318,
-    "deepReductionPct": 21.5,
+    "netDelta": -1388,
+    "deepOutputTokens": 254,
+    "deepReductionPct": 44.2,
+    "deepOutputTokensSamples": [
+      230,
+      652,
+      254
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 658,
-    "compareReductionPct": -62.5,
+    "compareOutputTokens": 448,
+    "compareReductionPct": 1.5,
+    "compareOutputTokensSamples": [
+      346,
+      448,
+      588
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   },
   {
     "id": "new-mcp-server-first-session",
     "tag": "adversarial",
-    "baselineOutputTokens": 346,
-    "distilledOutputTokens": 176,
-    "distilledReductionPct": 49.1,
+    "baselineOutputTokens": 30,
+    "baselineOutputTokensSamples": [
+      41,
+      27,
+      30
+    ],
+    "distilledOutputTokens": 144,
+    "distilledReductionPct": -380,
+    "distilledOutputTokensSamples": [
+      144,
+      228,
+      120
+    ],
     "distilledInputTokensAdded": 1248,
-    "outputReductionPct": 49.1,
+    "outputReductionPct": -380,
     "inputTokensAdded": 1248,
-    "netDelta": -1078,
-    "deepOutputTokens": 255,
-    "deepReductionPct": 26.3,
+    "netDelta": -1362,
+    "deepOutputTokens": 231,
+    "deepReductionPct": -670,
+    "deepOutputTokensSamples": [
+      174,
+      231,
+      253
+    ],
     "deepInputTokensAdded": 1274,
-    "compareOutputTokens": 251,
-    "compareReductionPct": 27.5,
+    "compareOutputTokens": 142,
+    "compareReductionPct": -373.3,
+    "compareOutputTokensSamples": [
+      142,
+      158,
+      21
+    ],
     "compareInputTokensAdded": 1254,
-    "mode": "cli"
+    "mode": "cli",
+    "repeats": 3
   }
 ]
