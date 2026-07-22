@@ -89,6 +89,7 @@ async function main() {
   console.log(`Running ${prompts.length} prompt(s) against ${MODEL}...\n`);
 
   const results = [];
+  let errors = 0;
   for (const p of prompts) {
     process.stdout.write(`  ${p.id} (${p.tag})... `);
     try {
@@ -99,8 +100,16 @@ async function main() {
           `(${r.outputReductionPct}%), input +${r.inputTokensAdded}, net ${r.netDelta >= 0 ? '+' : ''}${r.netDelta}`
       );
     } catch (err) {
+      errors += 1;
       console.log(`ERROR: ${err.message}`);
     }
+  }
+
+  if (results.length === 0) {
+    console.error(
+      '\nEvery benchmark case failed — no results written. Fix the errors above and rerun.'
+    );
+    process.exit(1);
   }
 
   const totalOutputSaved = results.reduce(
@@ -130,6 +139,13 @@ async function main() {
     JSON.stringify(results, null, 2)
   );
   console.log('\nFull results written to benchmarks/last-run-results.json');
+  if (errors > 0) {
+    console.error(
+      `\nWARNING: ${errors} case(s) errored and are missing from the results — ` +
+        'totals above cover only the cases that completed.'
+    );
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {
