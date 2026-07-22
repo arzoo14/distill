@@ -4,12 +4,29 @@
   "description": "MCP middleware that compresses tool/resource descriptions before they hit context, with net-savings telemetry shared with the Distill skill.",
   "main": "index.js",
   "bin": {
-    "distill-shrink": "./index.js"
+    "distill-shrink": "index.js"
   },
   "scripts": {
     "test": "node test/run-tests.js"
   },
   "license": "MIT",
+  "author": {
+    "name": "Arzoo Prajapati",
+    "url": "https://github.com/arzoo14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arzoo14/distill.git",
+    "directory": "middleware"
+  },
+  "homepage": "https://github.com/arzoo14/distill#readme",
+  "bugs": {
+    "url": "https://github.com/arzoo14/distill/issues"
+  },
+  "files": [
+    "index.js",
+    "lib/"
+  ],
   "engines": {
     "node": ">=18"
   },
