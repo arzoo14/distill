@@ -1,5 +1,9 @@
 # Distill
 
+[![CI](https://github.com/arzoo14/distill/actions/workflows/test.yml/badge.svg)](https://github.com/arzoo14/distill/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/distill-shrink?label=distill-shrink)](https://www.npmjs.com/package/distill-shrink)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Cut the filler. Keep the meaning. Know the real number.**
 
 Distill is a cross-platform token-efficiency toolkit for AI coding agents (Claude Code,
