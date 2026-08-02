@@ -7,6 +7,12 @@ const os = require('os');
 const DISTILL_HOME = path.join(os.homedir(), '.distill');
 const LOG_PATH = path.join(DISTILL_HOME, 'telemetry.log');
 
+// Rotate rather than grow forever: a 10-minute soak at artificial op rates
+// wrote ~120MB of events. At the cap the current log is renamed to
+// `<log>.1` (replacing any previous generation) and a fresh log starts —
+// summarize() intentionally reads only the current generation.
+const MAX_LOG_BYTES = 10 * 1024 * 1024;
+
 function ensureDir(logPath) {
   const dir = path.dirname(logPath);
   if (!fs.existsSync(dir)) {
@@ -31,10 +37,18 @@ function ensureDir(logPath) {
  * @param {boolean} [event.allowlistReexpansionTriggered]
  * @param {number} [event.reexpansionCostTokens]
  * @param {string} [logPath] - override for tests
+ * @param {number} [maxBytes] - rotation threshold override for tests
  */
-function logEvent(event, logPath = LOG_PATH) {
+function logEvent(event, logPath = LOG_PATH, maxBytes = MAX_LOG_BYTES) {
   try {
     ensureDir(logPath);
+    try {
+      if (fs.statSync(logPath).size >= maxBytes) {
+        fs.renameSync(logPath, logPath + '.1');
+      }
+    } catch {
+      // No existing log — nothing to rotate.
+    }
     const record = {
       ts: new Date().toISOString(),
       ...event,

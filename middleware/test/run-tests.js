@@ -476,4 +476,16 @@ test('telemetry logEvent never throws on unwritable path', () => {
   logEvent({ source: 'skill_output' }, '/nonexistent-root-dir-distill/t.log');
 });
 
+test('telemetry rotates the log at the size cap', () => {
+  const logPath = tmpFile('telemetry.log');
+  const tinyCap = 300;
+  for (let i = 0; i < 20; i++) {
+    logEvent({ source: 'middleware_tool_list', outputTokensBaseline: 10, outputTokensActual: 5 }, logPath, tinyCap);
+  }
+  assert.ok(fs.existsSync(logPath + '.1'), 'rotated generation exists');
+  assert.ok(fs.statSync(logPath).size < tinyCap + 200, 'current log stays near the cap');
+  const s = summarize(logPath);
+  assert.ok(s.events > 0 && s.events < 20, 'summarize reads only the current generation');
+});
+
 console.log(`\n${passed} test(s) passed`);

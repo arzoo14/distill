@@ -54,5 +54,14 @@ Wrap the server command in your MCP client config:
 - **Honest telemetry**: token savings are logged to `~/.distill/telemetry.log`
   as measured character counts, reported as net delta — see
   [HONEST-NUMBERS](https://github.com/arzoo14/distill/blob/main/docs/HONEST-NUMBERS.md).
+  The log rotates at 10 MB (one previous generation kept as `telemetry.log.1`).
+
+## Soak-tested
+
+Verified against the real `@modelcontextprotocol/server-filesystem` under
+sustained load: **3.95 million operations over 10 minutes (~6,600 ops/sec),
+zero errors, zero integrity failures** — every allowlist-protected file came
+back byte-identical, every compression was deterministic, memory held flat
+(~88 MB plateau, no leak), p99 latency 1 ms.
 
 Requires Node 18+.
