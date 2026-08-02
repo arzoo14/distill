@@ -1,10 +1,18 @@
-# Distill
+<p align="center">
+  <img src="assets/logo.svg" alt="Distill" width="640"/>
+</p>
 
-[![CI](https://github.com/arzoo14/distill/actions/workflows/test.yml/badge.svg)](https://github.com/arzoo14/distill/actions/workflows/test.yml)
-[![npm](https://img.shields.io/npm/v/distill-shrink?label=distill-shrink)](https://www.npmjs.com/package/distill-shrink)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<h3 align="center">Every token earns its place.</h3>
 
-**Cut the filler. Keep the meaning. Know the real number.**
+<p align="center">
+  <em>Cut the filler. Keep the meaning. Know the real number.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/arzoo14/distill/actions/workflows/test.yml"><img src="https://github.com/arzoo14/distill/actions/workflows/test.yml/badge.svg" alt="CI"/></a>
+  <a href="https://www.npmjs.com/package/distill-shrink"><img src="https://img.shields.io/npm/v/distill-shrink?label=distill-shrink" alt="npm"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license"/></a>
+</p>
 
 Distill is a token-efficiency toolkit for AI coding agents that attacks **both
 sides** of your token bill — what the model writes *and* what gets loaded into
