@@ -12,7 +12,14 @@
   <a href="https://github.com/arzoo14/distill/actions/workflows/test.yml"><img src="https://github.com/arzoo14/distill/actions/workflows/test.yml/badge.svg" alt="CI"/></a>
   <a href="https://www.npmjs.com/package/distill-shrink"><img src="https://img.shields.io/npm/v/distill-shrink?label=distill-shrink" alt="npm"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license"/></a>
+  <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="beta"/>
 </p>
+
+> **Beta.** The architecture is tested (62 unit tests, a soak test with 3.95M
+> real MCP operations, CI on Node 18/20/22) and the benchmark numbers below are
+> real — but this is a first release with limited field usage. APIs, defaults,
+> and telemetry formats may still shift before 1.0. Feedback and issues
+> genuinely welcome: that's what a beta is for.
 
 Distill is a token-efficiency toolkit for AI coding agents that attacks **both
 sides** of your token bill — what the model writes *and* what gets loaded into
