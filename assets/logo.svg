@@ -1,33 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 480" role="img" aria-label="Distill logo">
-  <rect width="1600" height="480" rx="24" fill="#0a0a0a"/>
+  <rect width="1600" height="480" rx="24" fill="#0B1F3F"/>
   <!-- pixel funnel: many tokens in, one distilled drop out -->
   <g fill="#ffffff">
     <!-- row 1: 8 px -->
-    <rect x="352" y="120" width="34" height="34" rx="7"/>
-    <rect x="394" y="120" width="34" height="34" rx="7"/>
-    <rect x="436" y="120" width="34" height="34" rx="7"/>
-    <rect x="478" y="120" width="34" height="34" rx="7"/>
-    <rect x="520" y="120" width="34" height="34" rx="7"/>
-    <rect x="562" y="120" width="34" height="34" rx="7"/>
-    <rect x="604" y="120" width="34" height="34" rx="7"/>
-    <rect x="646" y="120" width="34" height="34" rx="7"/>
+    <rect x="352" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="394" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="436" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="478" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="520" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="562" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="604" y="120" width="34" height="34" rx="7" opacity="0.55"/>
+    <rect x="646" y="120" width="34" height="34" rx="7" opacity="0.55"/>
     <!-- row 2: 6 px -->
-    <rect x="394" y="162" width="34" height="34" rx="7"/>
-    <rect x="436" y="162" width="34" height="34" rx="7"/>
-    <rect x="478" y="162" width="34" height="34" rx="7"/>
-    <rect x="520" y="162" width="34" height="34" rx="7"/>
-    <rect x="562" y="162" width="34" height="34" rx="7"/>
-    <rect x="604" y="162" width="34" height="34" rx="7"/>
+    <rect x="394" y="162" width="34" height="34" rx="7" opacity="0.7"/>
+    <rect x="436" y="162" width="34" height="34" rx="7" opacity="0.7"/>
+    <rect x="478" y="162" width="34" height="34" rx="7" opacity="0.7"/>
+    <rect x="520" y="162" width="34" height="34" rx="7" opacity="0.7"/>
+    <rect x="562" y="162" width="34" height="34" rx="7" opacity="0.7"/>
+    <rect x="604" y="162" width="34" height="34" rx="7" opacity="0.7"/>
     <!-- row 3: 4 px -->
-    <rect x="436" y="204" width="34" height="34" rx="7"/>
-    <rect x="478" y="204" width="34" height="34" rx="7"/>
-    <rect x="520" y="204" width="34" height="34" rx="7"/>
-    <rect x="562" y="204" width="34" height="34" rx="7"/>
+    <rect x="436" y="204" width="34" height="34" rx="7" opacity="0.85"/>
+    <rect x="478" y="204" width="34" height="34" rx="7" opacity="0.85"/>
+    <rect x="520" y="204" width="34" height="34" rx="7" opacity="0.85"/>
+    <rect x="562" y="204" width="34" height="34" rx="7" opacity="0.85"/>
     <!-- row 4: 2 px -->
     <rect x="478" y="246" width="34" height="34" rx="7"/>
     <rect x="520" y="246" width="34" height="34" rx="7"/>
-    <!-- the distilled drop -->
-    <rect x="499" y="316" width="34" height="34" rx="12"/>
   </g>
+  <!-- the distilled drop: bright accent, the payoff of the funnel -->
+  <rect x="499" y="316" width="34" height="34" rx="12" fill="#38BDF8"/>
   <text x="760" y="278" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="150" font-weight="700" fill="#ffffff" letter-spacing="-3">Distill</text>
 </svg>
