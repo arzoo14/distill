@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { classify, isClarification, stepDown, applySimpleStreak } = require('../hooks/user-prompt-submit');
 const { extractTurnContext, findProtectedMisses } = require('../hooks/stop');
 const { shouldNudge } = require('../hooks/post-tool-use');
@@ -17,6 +19,20 @@ function test(name, fn) {
     process.exitCode = 1;
   }
 }
+
+// --- vendored lib files (Gap: marketplace installs ship only plugin/, so
+// hooks/scripts can't reach middleware/lib/ — plugin/lib/ holds byte-identical
+// copies; this test catches drift between the two before it ships broken) ---
+
+test('plugin/lib vendored copies stay in sync with middleware/lib', () => {
+  const vendored = path.join(__dirname, '..', 'lib');
+  const source = path.join(__dirname, '..', '..', 'middleware', 'lib');
+  for (const file of ['telemetry.js', 'allowlist.js', 'baseline-ratios.js']) {
+    const a = fs.readFileSync(path.join(vendored, file), 'utf8');
+    const b = fs.readFileSync(path.join(source, file), 'utf8');
+    assert.strictEqual(a, b, `plugin/lib/${file} has drifted from middleware/lib/${file} — copy the source over`);
+  }
+});
 
 // --- classify (shared with Stop hook's bucket estimate) ---
 

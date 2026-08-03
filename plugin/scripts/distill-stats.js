@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { summarize } = require('../../middleware/lib/telemetry');
+const { summarize } = require('../lib/telemetry');
 
 // Pricing for the dollar estimates below (USD per million tokens). Defaults
 // are Claude Sonnet rates; override via env for other models/plans.

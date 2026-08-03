@@ -13,8 +13,9 @@
  * consecutive escalations per turn so a persistent miss cannot loop forever.
  *
  * Telemetry: on a clean pass, log an ESTIMATED skill_output event using
- * benchmark-derived reduction ratios (middleware/lib/baseline-ratios.js) — no
- * live shadow API call. Estimated events are flagged `estimated: true` and
+ * benchmark-derived reduction ratios (lib/baseline-ratios.js, vendored from
+ * middleware/lib/ — kept in sync via plugin/test/run-tests.js) — no live
+ * shadow API call. Estimated events are flagged `estimated: true` and
  * reported separately from measured middleware savings by /distill-stats.
  *
  * Scoped to the current turn only, deliberately: a `DROP TABLE` the user
@@ -26,9 +27,9 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { TRIGGER_PATTERNS } = require('../../middleware/lib/allowlist');
-const { logEvent } = require('../../middleware/lib/telemetry');
-const { ratioForBucket } = require('../../middleware/lib/baseline-ratios');
+const { TRIGGER_PATTERNS } = require('../lib/allowlist');
+const { logEvent } = require('../lib/telemetry');
+const { ratioForBucket } = require('../lib/baseline-ratios');
 const { classify } = require('./user-prompt-submit');
 
 const STATE_FILE = path.join(os.homedir(), '.distill', 'session-state.json');
