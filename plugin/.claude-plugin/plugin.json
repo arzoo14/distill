@@ -1,6 +1,6 @@
 {
   "name": "distill",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Adaptive, allowlist-protected token compression for Claude Code — semantic compression that never drops safety-relevant content.",
   "author": {
     "name": "Arzoo Prajapati",
