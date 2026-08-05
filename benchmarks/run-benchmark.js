@@ -34,6 +34,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -85,7 +86,7 @@ async function callClaudeApi({ system, userPrompt }) {
   };
 }
 
-function callClaudeCli({ system, userPrompt }) {
+function callClaudeCli({ system, userPrompt, cwd }) {
   const args = ['-p', userPrompt, '--output-format', 'json', '--model', MODEL];
   if (system) args.push('--append-system-prompt', system);
   if (process.env.DISTILL_BENCH_SETTINGS) {
@@ -95,6 +96,14 @@ function callClaudeCli({ system, userPrompt }) {
     encoding: 'utf8',
     timeout: 300000,
     maxBuffer: 16 * 1024 * 1024,
+    // Run from a neutral, empty directory — not the Distill repo. With cwd
+    // left at the repo root, the model can (and does) read its own
+    // benchmarks/prompts.json or test fixtures, recognize the prompt as a
+    // known eval case, and respond to being tested instead of answering
+    // naturally. That's real, observed contamination (both arms opened with
+    // "this is the destructive-op-confirmation benchmark prompt..." instead
+    // of answering), not a hypothetical.
+    cwd,
   });
   const data = JSON.parse(stdout);
   if (data.is_error) {
@@ -108,10 +117,10 @@ function callClaudeCli({ system, userPrompt }) {
   };
 }
 
-async function callClaude(mode, { system, userPrompt }) {
+async function callClaude(mode, { system, userPrompt, cwd }) {
   return mode === 'api'
     ? callClaudeApi({ system, userPrompt })
-    : callClaudeCli({ system, userPrompt });
+    : callClaudeCli({ system, userPrompt, cwd });
 }
 
 function buildArms(skillText) {
@@ -153,19 +162,19 @@ function median(values) {
  * run-to-run — single samples flipped sign between whole benchmark runs, so
  * medians over n>=3 are the only per-case numbers worth quoting.
  */
-async function sampleArm(mode, system, userPrompt, repeats) {
+async function sampleArm(mode, system, userPrompt, repeats, cwd) {
   const samples = [];
   let inputTokens = 0;
   for (let i = 0; i < repeats; i++) {
-    const r = await callClaude(mode, { system, userPrompt });
+    const r = await callClaude(mode, { system, userPrompt, cwd });
     samples.push(r.outputTokens);
     inputTokens = r.inputTokens;
   }
   return { outputTokens: median(samples), samples, inputTokens };
 }
 
-async function runOne(mode, promptCase, arms, repeats) {
-  const baseline = await sampleArm(mode, undefined, promptCase.prompt, repeats);
+async function runOne(mode, promptCase, arms, repeats, cwd) {
+  const baseline = await sampleArm(mode, undefined, promptCase.prompt, repeats, cwd);
   const result = {
     id: promptCase.id,
     tag: promptCase.tag,
@@ -174,7 +183,7 @@ async function runOne(mode, promptCase, arms, repeats) {
   if (repeats > 1) result.baselineOutputTokensSamples = baseline.samples;
 
   for (const arm of arms) {
-    const r = await sampleArm(mode, arm.system, promptCase.prompt, repeats);
+    const r = await sampleArm(mode, arm.system, promptCase.prompt, repeats, cwd);
     result[`${arm.key}OutputTokens`] = r.outputTokens;
     result[`${arm.key}ReductionPct`] = pct(baseline.outputTokens, r.outputTokens);
     if (repeats > 1) result[`${arm.key}OutputTokensSamples`] = r.samples;
@@ -203,10 +212,29 @@ function parseRepeats() {
   return Number.isFinite(n) && n >= 1 ? Math.min(n, 9) : 1;
 }
 
+// Comma-separated prompt ids to run, e.g. --only math-proof,single-fact-question.
+// For re-running just the cases that errored (rate limits, transient CLI
+// failures) without re-spending calls on ones that already succeeded.
+function parseOnly() {
+  const argIdx = process.argv.indexOf('--only');
+  const raw = argIdx !== -1 ? process.argv[argIdx + 1] : process.env.DISTILL_BENCH_ONLY;
+  if (!raw) return null;
+  return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
+}
+
 async function main() {
   const mode = detectMode();
   const repeats = parseRepeats();
-  const prompts = JSON.parse(fs.readFileSync(PROMPTS_PATH, 'utf8'));
+  const only = parseOnly();
+  let prompts = JSON.parse(fs.readFileSync(PROMPTS_PATH, 'utf8'));
+  if (only) {
+    prompts = prompts.filter((p) => only.has(p.id));
+    const missing = [...only].filter((id) => !prompts.some((p) => p.id === id));
+    if (missing.length > 0) {
+      console.error(`Unknown --only id(s): ${missing.join(', ')}`);
+      process.exit(1);
+    }
+  }
   const skillText = fs.readFileSync(SKILL_PATH, 'utf8');
   const arms = buildArms(skillText);
 
@@ -230,74 +258,93 @@ async function main() {
     console.log('');
   }
 
+  // CLI mode spawns `claude -p` as a real subprocess with a real cwd, and it
+  // has file access there. Running it from the repo root let the model read
+  // benchmarks/prompts.json or test fixtures, recognize the prompt as a known
+  // eval case, and respond to being tested instead of answering naturally —
+  // observed directly (both distill and a comparison arm opened with "this
+  // is the destructive-op-confirmation benchmark prompt..." rather than
+  // answering). An empty temp dir has nothing for the model to find.
+  let neutralCwd;
+  if (mode === 'cli') {
+    neutralCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'distill-bench-'));
+  }
+
   const results = [];
   let errors = 0;
-  for (const p of prompts) {
-    process.stdout.write(`  ${p.id} (${p.tag})... `);
-    try {
-      const r = await runOne(mode, p, arms, repeats);
-      results.push(r);
-      const spread = (key) =>
-        repeats > 1
-          ? ` [${Math.min(...r[`${key}OutputTokensSamples`])}-${Math.max(...r[`${key}OutputTokensSamples`])}]`
-          : '';
-      const armReport = arms
-        .map(
-          (a) =>
-            `${a.label} ${r[`${a.key}OutputTokens`]}${spread(a.key)} (${r[`${a.key}ReductionPct`]}%)`
-        )
-        .join(' | ');
-      console.log(`baseline ${r.baselineOutputTokens}${spread('baseline')} tok | ${armReport}`);
-    } catch (err) {
-      errors += 1;
-      console.log(`ERROR: ${err.message}`);
+  try {
+    for (const p of prompts) {
+      process.stdout.write(`  ${p.id} (${p.tag})... `);
+      try {
+        const r = await runOne(mode, p, arms, repeats, neutralCwd);
+        results.push(r);
+        const spread = (key) =>
+          repeats > 1
+            ? ` [${Math.min(...r[`${key}OutputTokensSamples`])}-${Math.max(...r[`${key}OutputTokensSamples`])}]`
+            : '';
+        const armReport = arms
+          .map(
+            (a) =>
+              `${a.label} ${r[`${a.key}OutputTokens`]}${spread(a.key)} (${r[`${a.key}ReductionPct`]}%)`
+          )
+          .join(' | ');
+        console.log(`baseline ${r.baselineOutputTokens}${spread('baseline')} tok | ${armReport}`);
+      } catch (err) {
+        errors += 1;
+        console.log(`ERROR: ${err.message}`);
+      }
     }
-  }
 
-  if (results.length === 0) {
-    console.error(
-      '\nEvery benchmark case failed — no results written. Fix the errors above and rerun.'
-    );
-    process.exit(1);
-  }
+    if (results.length === 0) {
+      console.error(
+        '\nEvery benchmark case failed — no results written. Fix the errors above and rerun.'
+      );
+      process.exitCode = 1;
+      return;
+    }
 
-  console.log('\n--- Summary (honest, net-first — see docs/HONEST-NUMBERS.md) ---');
-  const totalBaseline = results.reduce((s, r) => s + r.baselineOutputTokens, 0);
-  console.log(`Baseline output total:      ${totalBaseline} tok`);
-  for (const arm of arms) {
-    const totalOut = results.reduce((s, r) => s + r[`${arm.key}OutputTokens`], 0);
-    const saved = totalBaseline - totalOut;
-    const overhead = results.reduce((s, r) => s + r[`${arm.key}InputTokensAdded`], 0);
-    const net = saved - overhead;
+    console.log('\n--- Summary (honest, net-first — see docs/HONEST-NUMBERS.md) ---');
+    const totalBaseline = results.reduce((s, r) => s + r.baselineOutputTokens, 0);
+    console.log(`Baseline output total:      ${totalBaseline} tok`);
+    for (const arm of arms) {
+      const totalOut = results.reduce((s, r) => s + r[`${arm.key}OutputTokens`], 0);
+      const saved = totalBaseline - totalOut;
+      const overhead = results.reduce((s, r) => s + r[`${arm.key}InputTokensAdded`], 0);
+      const net = saved - overhead;
+      console.log(
+        `${arm.label.padEnd(26)} output ${totalOut} tok ` +
+          `(saved ${saved}, ${pct(totalBaseline, totalOut)}%), ` +
+          `input +${overhead}, NET ${net >= 0 ? '+' : ''}${net}`
+      );
+    }
+
+    const adversarial = results.filter((r) => r.tag === 'adversarial');
+    const adversarialNet = adversarial.reduce((sum, r) => sum + r.netDelta, 0);
     console.log(
-      `${arm.label.padEnd(26)} output ${totalOut} tok ` +
-        `(saved ${saved}, ${pct(totalBaseline, totalOut)}%), ` +
-        `input +${overhead}, NET ${net >= 0 ? '+' : ''}${net}`
+      `Adversarial net (distill-adaptive): ${adversarialNet}` +
+        (adversarialNet < 0 ? '  (net-negative on adversarial cases — see docs/HONEST-NUMBERS.md)' : '')
     );
-  }
 
-  const adversarial = results.filter((r) => r.tag === 'adversarial');
-  const adversarialNet = adversarial.reduce((sum, r) => sum + r.netDelta, 0);
-  console.log(
-    `Adversarial net (distill-adaptive): ${adversarialNet}` +
-      (adversarialNet < 0 ? '  (net-negative on adversarial cases — see docs/HONEST-NUMBERS.md)' : '')
-  );
-
-  for (const r of results) {
-    r.mode = mode;
-    r.repeats = repeats;
-  }
-  fs.writeFileSync(
-    path.join(__dirname, 'last-run-results.json'),
-    JSON.stringify(results, null, 2)
-  );
-  console.log('\nFull results written to benchmarks/last-run-results.json');
-  if (errors > 0) {
-    console.error(
-      `\nWARNING: ${errors} case(s) errored and are missing from the results — ` +
-        'totals above cover only the cases that completed.'
+    for (const r of results) {
+      r.mode = mode;
+      r.repeats = repeats;
+    }
+    fs.writeFileSync(
+      path.join(__dirname, 'last-run-results.json'),
+      JSON.stringify(results, null, 2)
     );
-    process.exitCode = 1;
+    console.log('\nFull results written to benchmarks/last-run-results.json');
+    if (errors > 0) {
+      console.error(
+        `\nWARNING: ${errors} case(s) errored and are missing from the results — ` +
+          'totals above cover only the cases that completed.'
+      );
+      process.exitCode = 1;
+    }
+  } finally {
+    if (neutralCwd) {
+      fs.rmSync(neutralCwd, { recursive: true, force: true });
+    }
   }
 }
 
