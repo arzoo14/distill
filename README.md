@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="beta"/>
 </p>
 
-> **Beta.** The architecture is tested (62 unit tests, a soak test with 3.95M
+> **Beta.** The architecture is tested (65 unit tests, a soak test with 3.95M
 > real MCP operations, CI on Node 18/20/22) and the benchmark numbers below are
 > real — but this is a first release with limited field usage. APIs, defaults,
 > and telemetry formats may still shift before 1.0. Feedback and issues
@@ -180,7 +180,7 @@ included. Losing cases published.
 
 ## Quality bar
 
-- 62 unit tests + end-to-end bridge and hooks pipelines, CI on Node 18/20/22
+- 65 unit tests + end-to-end bridge and hooks pipelines, CI on Node 18/20/22
 - 4-case behavioral [eval suite](evals/) pinning the safety guarantees
 - Soak-proven under ~6,600 ops/sec sustained load
 - Every install row in this README has been executed for real

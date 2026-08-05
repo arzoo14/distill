@@ -30,14 +30,22 @@ Distill adds a lightweight, non-LLM post-check, enforced in two places:
   MCP tool/resource description that trips a trigger pattern is left verbatim —
   danger/scope language in tool descriptions is never compacted away.
 - **Output side** (`plugin/hooks/stop.js`): when a response finishes, the hook
-  scans this turn's input context (user prompt + tool results) for trigger
-  patterns — `rm -rf`, `DROP TABLE`, `--force`, force-push, `truncate`,
-  `revoke`, `overwrite`, `irreversible`, `cannot be undone`, common
-  CVE/vulnerability language, etc. (full pattern list:
-  `middleware/lib/allowlist.js`) — and verifies each trigger's text still
-  appears in the final message. A missing trigger blocks the stop and feeds the
-  dropped sentences back to the model to restore, capped at two consecutive
-  escalations per turn so a false positive can't loop forever.
+  scans this turn's input context (user prompt + tool results, excluding
+  Read/Glob/Grep — see below) for trigger patterns — `rm -rf`, `DROP TABLE`,
+  `--force`, force-push, `truncate`, `revoke`, `overwrite`, `irreversible`,
+  `cannot be undone`, common CVE/vulnerability language, etc. (full pattern
+  list: `middleware/lib/allowlist.js`) — and verifies each trigger's text
+  still appears in the final message. A missing trigger blocks the stop and
+  feeds the dropped sentences back to the model to restore, capped at two
+  consecutive escalations per turn so a false positive can't loop forever.
+
+  Read/Glob/Grep results are excluded from the scan: they return file/search
+  content for the agent to *observe*, not the outcome of a live action —
+  scanning them meant reading Distill's own `allowlist.js` (which necessarily
+  contains every trigger pattern as source) or any file that happens to
+  mention "unsafe" in a comment could trip the hook with nothing dangerous
+  having actually happened. Bash and MCP tool-call results stay in scope,
+  since those reflect something that actually ran.
 
 This keeps the safety net outside the model's "willpower" — it's a check on the
 output, not just an instruction going in.

@@ -22,6 +22,15 @@
  * pasted three turns ago in an unrelated context is not re-demanded of this
  * response. Every failure path exits 0 — a broken hook must never break the
  * session.
+ *
+ * Read-only tool results are excluded from the scan (see READONLY_TOOLS):
+ * Read/Glob/Grep return file/search content for the agent to observe, not a
+ * live warning about an action just taken. Scanning them caused real false
+ * positives — e.g. reading allowlist.js during a code review trips on its
+ * own `--force` regex literal — that cost real re-expansion tokens without
+ * protecting anything, since no live command or MCP call actually happened.
+ * Bash and MCP tool_call results stay in scope: those reflect something that
+ * actually ran, which is exactly the case this hook exists to catch.
  */
 
 const fs = require('fs');
@@ -36,6 +45,40 @@ const STATE_FILE = path.join(os.homedir(), '.distill', 'session-state.json');
 const SKILL_PATH = path.join(__dirname, '..', 'skills', 'distill', 'SKILL.md');
 const MAX_TRANSCRIPT_LINES = 200;
 const MAX_ESCALATIONS = 2;
+
+// Observational, non-mutating tools: their results are file/search content
+// for the agent to read, not the outcome of an action. Excluded from the
+// allowlist scan — see the file-header comment for why.
+const READONLY_TOOLS = new Set(['Read', 'Glob', 'Grep']);
+
+/**
+ * Map each tool_use id to its tool name by scanning assistant records once.
+ * Needed because the transcript walk in extractTurnContext goes backward and
+ * would otherwise reach a tool_result before the tool_use that named it.
+ *
+ * @param {string[]} lines - JSONL lines
+ * @returns {Map<string, string>}
+ */
+function buildToolNameMap(lines) {
+  const map = new Map();
+  for (const raw of lines) {
+    let record;
+    try {
+      record = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    if (record?.type !== 'assistant') continue;
+    const content = record?.message?.content;
+    if (!Array.isArray(content)) continue;
+    for (const part of content) {
+      if (part && part.type === 'tool_use' && typeof part.id === 'string' && typeof part.name === 'string') {
+        map.set(part.id, part.name);
+      }
+    }
+  }
+  return map;
+}
 
 function readState() {
   try {
@@ -79,6 +122,7 @@ function textFromContent(content) {
  */
 function extractTurnContext(lines) {
   const recent = lines.slice(-MAX_TRANSCRIPT_LINES);
+  const toolNameById = buildToolNameMap(recent);
   let userText = '';
   const toolResults = [];
   let lastAssistantUsage = null;
@@ -107,6 +151,8 @@ function extractTurnContext(lines) {
     );
 
     for (const tr of toolResultParts) {
+      const toolName = tr && typeof tr.tool_use_id === 'string' ? toolNameById.get(tr.tool_use_id) : undefined;
+      if (toolName && READONLY_TOOLS.has(toolName)) continue;
       toolResults.push(textFromContent(tr.content));
     }
     if (textParts.length > 0) {

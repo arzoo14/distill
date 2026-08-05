@@ -104,6 +104,62 @@ test('extractTurnContext finds nearest real user message and tool results', () =
   assert.strictEqual(ctx.lastAssistantUsage.output_tokens, 42);
 });
 
+test('extractTurnContext excludes Read/Glob/Grep results but keeps Bash results', () => {
+  const lines = [
+    line({ type: 'user', message: { content: 'review the allowlist and run the failing command' } }),
+    line({
+      type: 'assistant',
+      message: {
+        content: [
+          { type: 'tool_use', id: 'toolu_read1', name: 'Read' },
+          { type: 'tool_use', id: 'toolu_bash1', name: 'Bash' },
+        ],
+        usage: { output_tokens: 10 },
+      },
+    }),
+    line({
+      type: 'user',
+      message: {
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'toolu_read1',
+            content: [{ type: 'text', text: 'const re = /--force\\b/i; // unsafe, irreversible' }],
+          },
+          {
+            type: 'tool_result',
+            tool_use_id: 'toolu_bash1',
+            content: [{ type: 'text', text: 'WARNING: this operation is irreversible' }],
+          },
+        ],
+      },
+    }),
+  ];
+  const ctx = extractTurnContext(lines);
+  assert.ok(!/--force/.test(ctx.toolResultText), 'Read result excluded');
+  assert.ok(/WARNING: this operation is irreversible/.test(ctx.toolResultText), 'Bash result kept');
+});
+
+test('extractTurnContext keeps tool results when the originating tool is unknown', () => {
+  const lines = [
+    line({ type: 'user', message: { content: 'go' } }),
+    line({
+      type: 'user',
+      message: {
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'toolu_unmapped',
+            content: [{ type: 'text', text: 'irreversible without a matching tool_use' }],
+          },
+        ],
+      },
+    }),
+  ];
+  const ctx = extractTurnContext(lines);
+  assert.ok(/irreversible/.test(ctx.toolResultText));
+});
+
 test('extractTurnContext tolerates malformed lines and empty input', () => {
   const ctx = extractTurnContext(['garbage', '{"half": ', line({ type: 'other' })]);
   assert.strictEqual(ctx.userText, '');
