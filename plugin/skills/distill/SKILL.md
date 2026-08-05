@@ -6,7 +6,7 @@ description: >
   task needs it, and all safety-relevant content unconditionally. Auto-triggers on
   "be brief", "less tokens", "distill", or activates by default after install.
   Stays active until "/distill off" or session end.
-version: 0.2.1
+version: 0.2.2
 ---
 
 # Distill — Response Compression Skill
